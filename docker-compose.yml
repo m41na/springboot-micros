@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: micros-db
+    image: buildo/h2database
+    restart: always
+    ports:
+      - "8082"
+    volumes:
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+#      - ./sql/data.sql:/docker-entrypoint-initdb.d/2-data.sql
+    env_file:
+      - .env.dev
+
+  eureka:
+    container_name: eureka-service
+    image: eureka-service:latest
+    restart: on-failure
+    ports:
+      - "3000:3000"
+    links:
+      - db:h2host
+    env_file:
+      - .env.dev
+
+  product:
+    container_name: product-service
+    image: product-service:latest
+    restart: on-failure
+    ports:
+      - "3000:3000"
+    links:
+      - db:h2host
+
+  coupon:
+    container_name: coupon-service
+    image: coupon-service:latest
+    restart: on-failure
+    ports:
+      - "3000:3000"
+    links:
+      - db:h2host
+
+  haproxy:
+    container_name: micros-haproxy
+    image: micros-haproxy
+    build: ./haproxy
+    ports:
+      - "3001:3001"
+    depends_on:
+      - eureka
